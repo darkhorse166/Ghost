@@ -1,5 +1,6 @@
 var migrations = require('../data/migration'),
-    _          = require('lodash');
+    _          = require('lodash'),
+    when   = require('when');
 
 module.exports = {
     Post: require('./post').Post,
@@ -10,6 +11,9 @@ module.exports = {
     Tag: require('./tag').Tag,
     Base: require('./base'),
     Session: require('./session').Session,
+    App: require('./app').App,
+    AppField: require('./appField').AppField,
+    AppSetting: require('./appSetting').AppSetting,
 
     init: function () {
         return migrations.init();
@@ -19,15 +23,15 @@ module.exports = {
     deleteAllContent: function () {
         var self = this;
 
-        return self.Post.browse().then(function (posts) {
-            _.each(posts.toJSON(), function (post) {
-                self.Post.destroy(post.id);
-            });
+        return self.Post.findAll().then(function (posts) {
+            return when.all(_.map(posts.toJSON(), function (post) {
+                return self.Post.destroy({id: post.id});
+            }));
         }).then(function () {
-            self.Tag.browse().then(function (tags) {
-                _.each(tags.toJSON(), function (tag) {
-                    self.Tag.destroy(tag.id);
-                });
+            return self.Tag.findAll().then(function (tags) {
+                return when.all(_.map(tags.toJSON(), function (tag) {
+                    return self.Tag.destroy({id: tag.id});
+                }));
             });
         });
     }

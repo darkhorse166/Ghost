@@ -49,12 +49,16 @@ var DEBUG = false, // TOGGLE THIS TO GET MORE SCREENSHOTS
 casper.writeContentToCodeMirror = function (content) {
     var lines = content.split("\n");
 
-    casper.each(lines, function (self, line) {
-        self.sendKeys('.CodeMirror-wrap textarea', line, {keepFocus: true});
-        self.sendKeys('.CodeMirror-wrap textarea', casper.page.event.key.Enter, {keepFocus: true});
-    });
+    casper.waitForSelector('.CodeMirror-wrap textarea', function onSuccess() {
+        casper.each(lines, function (self, line) {
+            self.sendKeys('.CodeMirror-wrap textarea', line, {keepFocus: true});
+            self.sendKeys('.CodeMirror-wrap textarea', casper.page.event.key.Enter, {keepFocus: true});
+        });
 
-    return this;
+        return this;
+    }, function onTimeout() {
+        casper.test.fail('CodeMirror was not found.');
+    }, 2000);
 };
 
 casper.waitForOpaque = function (classname, then, timeout) {
@@ -71,6 +75,12 @@ casper.waitForOpaque = function (classname, then, timeout) {
         }
         return value;
     }, then, timeout);
+};
+
+casper.failOnTimeout = function (test, message) {
+    return function onTimeout() {
+        test.fail(message);
+    };
 };
 
 // ## Debugging
@@ -99,7 +109,7 @@ casper.captureScreenshot = function (filename, debugOnly) {
 };
 
 // on failure, grab a screenshot
-casper.test.on("fail", function captureFailure() {
+casper.test.on("fail", function captureFailure(test) {
     casper.captureScreenshot(casper.test.filename || "casper_test_fail.png", false);
 });
 
